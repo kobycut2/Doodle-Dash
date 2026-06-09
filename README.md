@@ -1,2 +1,28 @@
-# Doodle-Dash
-Doodle Dash makes running and walking engaging and exciting. The user types or draws a simple message/image and then a route is found nearby that doodles out the users original input. It uses known roads, trails, and footpaths to generate the route.
+# Doodle Dash
+
+Turn text or drawings into GPS running routes. Type a word, pick a location, and Doodle Dash snaps it to real roads and trails.
+
+## How it works
+
+1. Type text or draw a shape
+2. Pick a location and scale
+3. The app snaps your path to real roads/trails
+
+## Stack
+
+- **Framework:** Next.js, JavaScript, Vue
+- **Map:** Mapbox GL JS
+- **Routing:** OpenRouteService
+- **Text-to-path:** opentype.js
+- **Drawing canvas:** Fabric.js / Konva
+- **PWA:** mobile-first progressive web app
+
+## Key challenges
+
+- **Pen-lift problem** — disconnected letter strokes (like the dot on an "i") must connect into one continuous route
+- **Road snapping** — converting a geometric path to the nearest traversable surface
+- **Scale control** — letting the user decide how big the route is
+
+## Status
+
+Early development.
