@@ -1,0 +1,12 @@
+{
+  "name": "doodle-dash",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "feDev": "npm run dev --workspace=frontend",
+    "beDev": "npm run dev --workspace=backend"
+  }
+}
