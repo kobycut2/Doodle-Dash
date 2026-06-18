@@ -39,7 +39,7 @@
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
-    <button class="submit-btn" @click="handleSubmit">Find Route</button>
+    <button class="submit-btn" :disabled="loading" @click="handleSubmit">{{ buttonText }}</button>
   </div>
 </template>
 
@@ -56,6 +56,30 @@ const activeColor = computed(() =>
   activeTab.value === 'text' ? 'var(--color-primary)' : 'var(--color-secondary)'
 )
 
+const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&'
+const TARGET = 'Find Route'
+const loading = ref(false)
+const buttonText = ref(TARGET)
+
+function scramble() {
+  loading.value = true
+  let iteration = 0
+  const interval = setInterval(() => {
+    buttonText.value = TARGET.split('').map((char, i) => {
+      if (char === ' ') return ' '
+      if (i < iteration) return char
+      return CHARS[Math.floor(Math.random() * CHARS.length)]
+    }).join('')
+
+    if (iteration >= TARGET.length) {
+      clearInterval(interval)
+      buttonText.value = TARGET
+      loading.value = false
+    }
+    iteration += 0.2
+  }, 80)
+}
+
 const emit = defineEmits<{
   submit: [payload: { text: string; distance: number }]
 }>()
@@ -66,6 +90,7 @@ function handleSubmit() {
     return
   }
   error.value = ''
+  scramble()
   emit('submit', { text: routeText.value, distance: selectedDistance.value })
 }
 </script>
