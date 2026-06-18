@@ -11,6 +11,13 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string
 
+defineProps<{
+  routeText: string
+  distance: number
+}>()
+
+const MARKER_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim()
+
 const mapContainer = ref<HTMLDivElement | null>(null)
 const error = ref('')
 let map: mapboxgl.Map | null = null
@@ -30,7 +37,7 @@ function initMap(lng: number, lat: number) {
     center: [lng, lat],
     zoom: 14,
   })
-  new mapboxgl.Marker({ color: '#C06C84' })
+  new mapboxgl.Marker({ color: MARKER_COLOR })
     .setLngLat([lng, lat])
     .addTo(map)
 }

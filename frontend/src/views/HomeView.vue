@@ -4,15 +4,23 @@
     <span class="brand-dash">Dash</span>
   </div>
   <div class="home">
-    <TopPanel />
-    <DoodleMap />
+    <TopPanel @submit="handleSubmit" />
+    <DoodleMap :route-text="routeData.text" :distance="routeData.distance" />
     <div class="bottom-spacer" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { reactive } from 'vue'
 import TopPanel from '../components/TopPanel.vue'
 import DoodleMap from '../components/DoodleMap.vue'
+
+const routeData = reactive({ text: '', distance: 5 })
+
+function handleSubmit(payload: { text: string; distance: number }) {
+  routeData.text = payload.text
+  routeData.distance = payload.distance
+}
 </script>
 
 <style scoped>
@@ -25,6 +33,13 @@ import DoodleMap from '../components/DoodleMap.vue'
   font-size: 2rem;
   font-weight: 700;
   z-index: 10;
+}
+
+@media (max-width: 700px) {
+  .brand {
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 .brand-doodle {
