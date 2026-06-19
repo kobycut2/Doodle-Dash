@@ -1,8 +1,12 @@
 <template>
   <div ref="mapContainer" class="map">
+    <div v-if="!locationReady" class="loader"></div>
     <div v-if="locationError" class="map-error">{{ locationError }}</div>
     <div v-if="locationReady && !selectedCenter" class="map-hint">
       Tap map to place route
+    </div>
+    <div v-if="actualDistanceMiles" class="distance-badge">
+      {{ actualDistanceMiles }} mi
     </div>
   </div>
 </template>
@@ -23,6 +27,7 @@ const props = defineProps<{
   locationError: string
   routeGeoJson: object | null
   selectedCenter: { lat: number; lng: number } | null
+  actualDistanceMiles: number | null
 }>()
 
 const emit = defineEmits<{
@@ -33,6 +38,7 @@ const cs = getComputedStyle(document.documentElement)
 const MARKER_COLOR = cs.getPropertyValue('--color-secondary').trim()
 const ROUTE_COLOR = cs.getPropertyValue('--color-primary').trim()
 
+const loading = ref(false)
 const mapContainer = ref<HTMLDivElement | null>(null)
 let map: mapboxgl.Map | null = null
 let centerMarker: mapboxgl.Marker | null = null
@@ -126,5 +132,52 @@ onUnmounted(() => map?.remove())
   border-radius: 20px;
   pointer-events: none;
   white-space: nowrap;
+}
+
+.distance-badge {
+  position: absolute;
+  bottom: 3rem;
+  right: 0.75rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.loading-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color : var(--color-primary);
+  font-weight: bold;
+}
+
+
+/* HTML: <div class="loader"></div> */
+.loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 30px;
+  aspect-ratio: 2;
+  background:
+    radial-gradient(farthest-side,#000 15%,#0000 18%)0 0/50% 100%,
+    radial-gradient(50% 100% at 50% 160%,#fff 95%,#0000) 0 0   /50% 50%,
+    radial-gradient(50% 100% at 50% -60%,#fff 95%,#0000) 0 100%/50% 50%;
+  background-repeat: repeat-x;
+  -webkit-mask: radial-gradient(50% 100%,#000 95%,#0000) 0 100%/50% 0% repeat-x;
+  animation: l3 1s infinite alternate ease-in;
+}
+@keyframes l3 {
+  0%,
+  70% {-webkit-mask-size:50% 100%}
+  85% {-webkit-mask-size:50% 0}
+  100% {-webkit-mask-size:50% 100%}
 }
 </style>

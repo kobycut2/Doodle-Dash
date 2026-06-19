@@ -19,7 +19,7 @@
 
     <div class="input-area">
       <div v-if="activeTab === 'text'" class="text-input">
-        <input v-model="routeText" type="text" placeholder="running sucks" maxlength="20" />
+        <input v-model="routeText" type="text" placeholder="run" maxlength="5" />
       </div>
       <div v-else class="draw-placeholder">
         <span>Drawing canvas coming soon</span>
@@ -49,7 +49,7 @@ import { ref, computed } from 'vue'
 const activeTab = ref<'text' | 'draw'>('text')
 const routeText = ref('')
 const error = ref('')
-const distanceOptions = [3, 5, 8, 10, 13, 16, 20, 26, 32]
+const distanceOptions = [3, 4, 5, 6, 8, 10, 12]
 const selectedDistance = ref<number>(5)
 
 const activeColor = computed(() =>
@@ -87,6 +87,10 @@ const emit = defineEmits<{
 function handleSubmit() {
   if (!routeText.value.trim()) {
     error.value = 'What would you like to doodle today? Please provide route text or a drawing.'
+    return
+  }
+  if (routeText.value.replace(/\s/g, '').length > 5) {
+    error.value = 'Max 5 letters.'
     return
   }
   error.value = ''
