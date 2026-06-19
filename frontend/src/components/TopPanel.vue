@@ -21,20 +21,20 @@
       <div v-if="activeTab === 'text'" class="text-input">
         <input v-model="routeText" type="text" placeholder="run" maxlength="5" />
       </div>
-      <div v-else class="draw-placeholder">
-        <span>Drawing canvas coming soon</span>
+      <div v-else class="draw-input">
+        <DrawCanvas ref="drawCanvasRef" />
       </div>
     </div>
 
     <div class="distance-selector">
       <button
-        v-for="miles in distanceOptions"
-        :key="miles"
+        v-for="opt in SIZE_OPTIONS"
+        :key="opt.value"
         class="distance-btn"
-        :class="{ 'distance-btn--active': selectedDistance === miles }"
-        @click="selectedDistance = miles"
+        :class="{ 'distance-btn--active': selectedDistance === opt.value }"
+        @click="selectedDistance = opt.value"
       >
-        {{ miles }}mi
+        {{ opt.label }}
       </button>
     </div>
 
@@ -45,12 +45,20 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import DrawCanvas from './DrawCanvas.vue'
 
 const activeTab = ref<'text' | 'draw'>('text')
+const drawCanvasRef = ref<InstanceType<typeof DrawCanvas> | null>(null)
 const routeText = ref('')
 const error = ref('')
-const distanceOptions = [3, 4, 5, 6, 8, 10, 12]
-const selectedDistance = ref<number>(5)
+const SIZE_OPTIONS = [
+  { label: 'XS', value: 2 },
+  { label: 'S',  value: 5 },
+  { label: 'M',  value: 8 },
+  { label: 'L',  value: 11 },
+  { label: 'XL', value: 15 },
+]
+const selectedDistance = ref<number>(8)
 
 const activeColor = computed(() =>
   activeTab.value === 'text' ? 'var(--color-primary)' : 'var(--color-secondary)'
@@ -81,21 +89,39 @@ function scramble() {
 }
 
 const emit = defineEmits<{
-  submit: [payload: { text: string; distance: number }]
+  submit: [payload: {
+    mode: 'text' | 'draw'
+    text: string
+    distance: number
+    strokes: Array<Array<{ x: number; y: number }>>
+  }]
 }>()
 
 function handleSubmit() {
-  if (!routeText.value.trim()) {
-    error.value = 'What would you like to doodle today? Please provide route text or a drawing.'
-    return
-  }
-  if (routeText.value.replace(/\s/g, '').length > 5) {
-    error.value = 'Max 5 letters.'
-    return
-  }
   error.value = ''
+  if (activeTab.value === 'text') {
+    if (!routeText.value.trim()) {
+      error.value = 'What would you like to doodle today?'
+      return
+    }
+    if (routeText.value.replace(/\s/g, '').length > 5) {
+      error.value = 'Max 5 letters.'
+      return
+    }
+  } else {
+    const drawn = drawCanvasRef.value?.getStrokes() ?? []
+    if (drawn.length === 0) {
+      error.value = 'Draw a shape first!'
+      return
+    }
+  }
   scramble()
-  emit('submit', { text: routeText.value, distance: selectedDistance.value })
+  emit('submit', {
+    mode: activeTab.value,
+    text: routeText.value,
+    distance: selectedDistance.value,
+    strokes: drawCanvasRef.value?.getStrokes() ?? [],
+  })
 }
 </script>
 
@@ -175,16 +201,8 @@ function handleSubmit() {
   border-color: var(--color-active);
 }
 
-.draw-placeholder {
+.draw-input {
   width: 100%;
-  height: 42px;
-  border: 2px dashed #d0c8d8;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #bbb;
-  font-size: 0.85rem;
 }
 
 .distance-selector {

@@ -81,6 +81,51 @@ function textToLetterGroups(text: string): {
   return { groups, totalPathUnits }
 }
 
+// Returns per-stroke letter groups from a freehand drawing.
+// Each stroke becomes its own "letter" so the routing backend can
+// handle each stroke independently and connect them with proper road transitions.
+// Return type: Array<Array<Array<[number, number]>>>
+//   outer  = letters (one per stroke)
+//   middle = strokes within that letter (always one element here)
+//   inner  = [lng, lat] pairs
+export function drawnStrokesToScaledLetterGroups(
+  rawStrokes: Array<Array<{ x: number; y: number }>>,
+  centerLat: number,
+  centerLng: number,
+  distanceMiles: number
+): Array<Array<Array<[number, number]>>> {
+  const valid = rawStrokes.filter(s => s.length >= 2)
+  if (valid.length === 0) return []
+
+  const allPts = valid.flat()
+  const xs = allPts.map(p => p.x)
+  const ys = allPts.map(p => p.y)
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2
+  const cy = (Math.min(...ys) + Math.max(...ys)) / 2
+
+  // Estimate total path length in canvas units for scaling
+  let totalUnits = 0
+  for (const stroke of valid) {
+    for (let i = 1; i < stroke.length; i++) {
+      const dx = stroke[i].x - stroke[i - 1].x
+      const dy = stroke[i].y - stroke[i - 1].y
+      totalUnits += Math.sqrt(dx * dx + dy * dy)
+    }
+  }
+  if (totalUnits === 0) return []
+
+  const targetKm = (distanceMiles * 1.60934) / 3
+  const latPerUnit = (targetKm / 111) / totalUnits
+  const lngPerUnit = latPerUnit / Math.cos(centerLat * Math.PI / 180)
+
+  return valid.map(stroke => [
+    stroke.map(({ x, y }) => [
+      centerLng + (x - cx) * lngPerUnit,
+      centerLat - (y - cy) * latPerUnit,
+    ] as [number, number])
+  ])
+}
+
 // Returns letters → strokes → [lng, lat] pairs
 export function textToScaledLetterGroups(
   text: string,
@@ -97,7 +142,7 @@ export function textToScaledLetterGroups(
   const cx = (Math.min(...xs) + Math.max(...xs)) / 2
   const cy = (Math.min(...ys) + Math.max(...ys)) / 2
 
-  const targetKm = (distanceMiles * 1.60934) / 1.5
+  const targetKm = (distanceMiles * 1.60934) / 3
   const latPerUnit = (targetKm / 111) / totalPathUnits
   const lngPerUnit = latPerUnit / Math.cos(centerLat * Math.PI / 180)
 

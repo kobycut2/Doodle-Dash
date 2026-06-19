@@ -25,8 +25,8 @@
 import { reactive, ref, onMounted } from 'vue'
 import TopPanel from '../components/TopPanel.vue'
 import DoodleMap from '../components/DoodleMap.vue'
-import { textToScaledLetterGroups } from '../utils/textToPath'
-import { matchLetters, routeLengthMiles } from '../utils/mapMatch'
+import { textToScaledLetterGroups, drawnStrokesToScaledLetterGroups } from '../utils/textToPath'
+import { matchLetters, matchDrawingViaBackend, routeLengthMiles } from '../utils/mapMatch'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string
 
@@ -51,13 +51,26 @@ onMounted(() => {
   )
 })
 
-async function handleSubmit(payload: { text: string; distance: number }) {
+async function handleSubmit(payload: {
+  mode: 'text' | 'draw'
+  text: string
+  distance: number
+  strokes: Array<Array<{ x: number; y: number }>>
+}) {
   routeData.text = payload.text
   routeData.distance = payload.distance
 
   const center = routeCenter.value ?? { lat: location.lat, lng: location.lng }
-  const letters = textToScaledLetterGroups(payload.text, center.lat, center.lng, payload.distance)
-  const result = await matchLetters(letters, MAPBOX_TOKEN)
+  const letters = payload.mode === 'draw'
+    ? drawnStrokesToScaledLetterGroups(payload.strokes, center.lat, center.lng, payload.distance)
+    : textToScaledLetterGroups(payload.text, center.lat, center.lng, payload.distance)
+  let result: { type: string; features: any[] } | null = null
+  if (payload.mode === 'draw') {
+    result = await matchDrawingViaBackend(letters)
+    if (!result) result = await matchLetters(letters, MAPBOX_TOKEN)
+  } else {
+    result = await matchLetters(letters, MAPBOX_TOKEN)
+  }
   if (!result) {
     alert('Route generation failed — try tapping a different spot on the map.')
     return
