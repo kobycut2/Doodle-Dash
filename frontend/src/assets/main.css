@@ -1,8 +1,10 @@
 :root {
-  --color-primary: #45ada8;
-  --color-secondary: #cc527a;
+  --color-primary: #cc527a;
+  --color-secondary: #45ada8;
   /* --color-background: #1e1e1e; */
-  --color-background: #f9f1e9;
+  --color-background: #eaebf5;
+  --color-panels: #ffffff;
+  /* --color-background: #ffffff; */
   --color-text: #F0ECF5;
 }
 
@@ -14,7 +16,7 @@
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {

@@ -1,5 +1,5 @@
 {
-  "name": "doodle-dash",
+  "name": "geoglyph-go",
   "private": true,
   "workspaces": [
     "frontend",

@@ -1,5 +1,5 @@
 <template>
-  <div class="canvas-wrapper">
+  <div class="canvas-wrapper" :class="{ 'canvas-wrapper--disabled': disabled }">
     <canvas
       ref="canvasEl"
       class="draw-canvas"
@@ -8,8 +8,11 @@
       @pointerup="endDraw"
       @pointerleave="endDraw"
     />
-    <div v-if="strokes.length === 0 && !drawing" class="hint">Draw your shape here</div>
-    <button v-if="strokes.length > 0" class="clear-btn" @click="clear">Clear</button>
+    <div v-if="strokes.length === 0 && !drawing" class="hint">Draw your shape here or draw directly on the map</div>
+    <div v-if="strokes.length > 0" class="canvas-actions">
+      <button class="canvas-action-btn" @click="undo">Undo</button>
+      <button class="canvas-action-btn" @click="clear">Clear</button>
+    </div>
   </div>
 </template>
 
@@ -17,6 +20,9 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 type Pt = { x: number; y: number }
+
+const props = defineProps<{ disabled?: boolean }>()
+const emit = defineEmits<{ 'draw-start': [] }>()
 
 const canvasEl = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
@@ -50,6 +56,7 @@ function rdp(points: Pt[], epsilon: number): Pt[] {
 
 function startDraw(e: PointerEvent) {
   if (!canvasEl.value) return
+  emit('draw-start')
   drawing = true
   const rect = canvasEl.value.getBoundingClientRect()
   currentStroke = [{ x: e.clientX - rect.left, y: e.clientY - rect.top }]
@@ -90,6 +97,11 @@ function redraw() {
   }
 }
 
+function undo() {
+  strokes.value.pop()
+  redraw()
+}
+
 function clear() {
   strokes.value = []
   currentStroke = []
@@ -109,17 +121,18 @@ onMounted(() => {
   onUnmounted(() => ro.disconnect())
 })
 
-defineExpose({ getStrokes: () => strokes.value })
+defineExpose({ getStrokes: () => strokes.value, clear, undo })
 </script>
 
 <style scoped>
 .canvas-wrapper {
   position: relative;
   width: 100%;
-  height: 160px;
-  border: 1.5px dashed #cc527a;
+  height: 400px;
+  border: 2px dashed var(--color-secondary);
   border-radius: 8px;
   overflow: hidden;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cline x1='12' y1='2' x2='12' y2='22' stroke='%23cc527a' stroke-width='2'/%3E%3Cline x1='2' y1='12' x2='22' y2='12' stroke='%23cc527a' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='2.5' fill='%23cc527a'/%3E%3C/svg%3E") 12 12, crosshair;
 }
 
 .draw-canvas {
@@ -127,7 +140,6 @@ defineExpose({ getStrokes: () => strokes.value })
   height: 100%;
   display: block;
   touch-action: none;
-  cursor: crosshair;
 }
 
 .hint {
@@ -136,17 +148,21 @@ defineExpose({ getStrokes: () => strokes.value })
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #cc527a;
-  opacity: 0.45;
-  font-size: 0.85rem;
+  color: var(--color-secondary);
+  font-size: 1rem;
   font-family: 'Poppins', sans-serif;
   pointer-events: none;
 }
 
-.clear-btn {
+.canvas-actions {
   position: absolute;
   top: 6px;
   right: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.canvas-action-btn {
   padding: 2px 10px;
   border: 1px solid #cc527a;
   border-radius: 4px;
@@ -158,7 +174,12 @@ defineExpose({ getStrokes: () => strokes.value })
   transition: background 0.15s;
 }
 
-.clear-btn:hover {
+.canvas-action-btn:hover {
   background: #fdeef3;
+}
+
+.canvas-wrapper--disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 </style>

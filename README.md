@@ -1,6 +1,6 @@
-# Doodle Dash
+# GeoGlyph Go
 
-Turn text or drawings into GPS running routes. Type a word, pick a location, and Doodle Dash snaps it to real roads and trails.
+Turn text or drawings into GPS running routes. Type a word, pick a location, and GeoGlyph Go snaps it to real roads and trails.
 
 ## How it works
 

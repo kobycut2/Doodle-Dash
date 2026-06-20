@@ -1,5 +1,5 @@
 {
-  "name": "doodle-dash-backend",
+  "name": "geoglyph-go-backend",
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon src/index.ts",
