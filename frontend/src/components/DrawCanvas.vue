@@ -22,7 +22,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 type Pt = { x: number; y: number }
 
 const props = defineProps<{ disabled?: boolean }>()
-const emit = defineEmits<{ 'draw-start': [] }>()
+const emit = defineEmits<{ 'draw-start': [], 'strokes-change': [boolean] }>()
 
 const canvasEl = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
@@ -78,6 +78,7 @@ function endDraw() {
   }
   currentStroke = []
   redraw()
+  emit('strokes-change', strokes.value.length > 0)
 }
 
 function redraw() {
@@ -100,12 +101,14 @@ function redraw() {
 function undo() {
   strokes.value.pop()
   redraw()
+  emit('strokes-change', strokes.value.length > 0)
 }
 
 function clear() {
   strokes.value = []
   currentStroke = []
   redraw()
+  emit('strokes-change', false)
 }
 
 onMounted(() => {

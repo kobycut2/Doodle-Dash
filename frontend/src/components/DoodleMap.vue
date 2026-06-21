@@ -1,9 +1,24 @@
 <template>
   <div ref="mapContainer" class="map">
-    <div v-if="!locationReady" class="loader"></div>
-    <div v-if="locationError" class="map-error">{{ locationError }}</div>
-    <div v-if="actualDistanceMiles" class="distance-badge">
-      {{ actualDistanceMiles }} mi
+    <div v-if="!locationReady && !locationError" class="loader"></div>
+    <div v-if="locationError" class="map-error">
+      <div class="map-error__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="36" height="36">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <p class="map-error__title">Location access denied</p>
+      <p class="map-error__body">Enable location permissions in your browser settings and reload the page to use your current location.</p>
+    </div>
+    <div v-if="actualDistanceMiles" class="distance-controls">
+      <div class="unit-toggle">
+        <button :class="{ 'unit-toggle--active': !useKm }" @click="useKm = false">mi</button>
+        <button :class="{ 'unit-toggle--active': useKm }" @click="useKm = true">km</button>
+      </div>
+      <div class="distance-badge">
+        <span class="distance-value">{{ displayedDistance }}</span>
+        <span class="distance-unit">{{ useKm ? 'km' : 'mi' }}</span>
+      </div>
     </div>
     <button
       v-if="drawingActive && drawnStrokes.length > 0"
@@ -30,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
@@ -66,6 +81,13 @@ let locationMarker: mapboxgl.Marker | null = null
 let centerMarker: mapboxgl.Marker | null = null
 
 // Drawing state
+const useKm = ref(false)
+const displayedDistance = computed(() => {
+  if (!props.actualDistanceMiles) return ''
+  if (useKm.value) return Math.round(props.actualDistanceMiles * 1.60934 * 10) / 10
+  return props.actualDistanceMiles
+})
+
 const drawingActive = ref(false)
 const drawnStrokes = ref<[number, number][][]>([])
 let currentStroke: [number, number][] = []
@@ -272,12 +294,33 @@ onUnmounted(() => { disableDrawing(); map?.remove() })
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2rem;
   text-align: center;
+  gap: 0.5rem;
+}
+
+.map-error__icon {
   color: var(--color-secondary);
-  font-size: 0.9rem;
+  opacity: 0.7;
+  margin-bottom: 0.25rem;
+}
+
+.map-error__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+  margin: 0;
+}
+
+.map-error__body {
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #888);
+  max-width: 22rem;
+  margin: 0;
+  line-height: 1.5;
 }
 
 .map-undo-btn {
@@ -336,19 +379,71 @@ onUnmounted(() => { disableDrawing(); map?.remove() })
   transition: 0.2s ease;
 }
 
-.distance-badge {
+.distance-controls {
   position: absolute;
-  bottom: 3rem;
-  right: 0.75rem;
-  background: var(--color-primary);
-  color: #ffffff;
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 0.4rem 0.9rem;
-  border-radius: 20px;
-  pointer-events: none;
-  margin-bottom: 1rem;
+  top: 0.75rem;
+  right: 1.25rem;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 0.9rem;
   z-index: 10;
+}
+
+.unit-toggle {
+  display: flex;
+  background: #ffffff;
+  border: 2px solid var(--color-primary);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  height: 3rem;
+}
+
+.unit-toggle button {
+  padding: 0 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.unit-toggle button:first-child {
+  border-right: 1.5px solid var(--color-primary);
+}
+
+.unit-toggle--active {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+.distance-badge {
+  background: #ffffff;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  padding: 0 1rem;
+  border-radius: 8px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 3rem;
+  box-sizing: border-box;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.distance-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.distance-unit {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.75;
 }
 
 .loading-message {

@@ -5,7 +5,7 @@
         <input v-model="routeText" type="text" placeholder="run" maxlength="5" />
       </div>
       <div v-else class="draw-input">
-        <DrawCanvas ref="drawCanvasRef" :disabled="mapDrawActive" @draw-start="emit('canvas-draw-start')" />
+        <DrawCanvas ref="drawCanvasRef" :disabled="mapDrawActive" @draw-start="emit('canvas-draw-start')" @strokes-change="hasCanvasStrokes = $event" />
       </div>
     </div>
 
@@ -41,22 +41,35 @@
 
     <p v-if="error" class="error">{{ error }}</p>
     <div class="submit-row">
-      <button class="submit-btn" :disabled="loading" @click="handleSubmit">{{ buttonText }}</button>
+      <button class="submit-btn" :disabled="loading" @click="handleSubmit">{{ buttonText }}<PhMapPin :size="22" :weight="canSubmit ? 'fill' : 'regular'" /></button>
       <button v-if="hasRoute" class="clear-route-btn" @click="emit('clear-route')">Clear Route</button>
+    </div>
+    <div class="export-row">
+      <button v-if="routeGeoJson" class="export-btn" @click="exportGpx(routeGeoJson)">
+        Export GPX <PhDownloadSimple :size="16" weight="bold" />
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import DrawCanvas from './DrawCanvas.vue'
-import { PhPersonSimpleBike, PhPersonSimpleRun } from '@phosphor-icons/vue'
 
-const props = defineProps<{ activeTab: 'draw' | 'text'; mapDrawActive?: boolean; hasMapStrokes?: boolean; hasRoute?: boolean }>()
+import DrawCanvas from './DrawCanvas.vue'
+import { PhPersonSimpleBike, PhPersonSimpleRun, PhMapPin, PhDownloadSimple } from '@phosphor-icons/vue'
+import { exportGpx } from '../utils/exportGpx'
+
+const props = defineProps<{ activeTab: 'draw' | 'text'; mapDrawActive?: boolean; hasMapStrokes?: boolean; hasRoute?: boolean; routeGeoJson?: object | null }>()
 
 const drawCanvasRef = ref<InstanceType<typeof DrawCanvas> | null>(null)
 const routeText = ref('')
 const error = ref('')
+const hasCanvasStrokes = ref(false)
+
+const canSubmit = computed(() => {
+  if (props.activeTab === 'text') return routeText.value.trim().length > 0
+  return hasCanvasStrokes.value || !!props.hasMapStrokes
+})
 
 const RUN_OPTIONS = [
   { label: 'XS', value: 2 },
@@ -302,6 +315,37 @@ function handleSubmit() {
 .clear-route-btn:hover {
   background: var(--color-active);
   color: #ffffff;
+  transform: scale(1.03);
+}
+
+.export-row {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 0.25rem;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-active);
+  background: transparent;
+  color: var(--color-active);
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.export-btn:hover {
+  background: var(--color-active);
+  color: #ffffff;
+  transform: scale(1.03);
 }
 
 .activity-btn {
@@ -337,10 +381,15 @@ function handleSubmit() {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
   background: var(--color-active);
   color: #ffffff;
+  transform: scale(1.03);
 }
 </style>

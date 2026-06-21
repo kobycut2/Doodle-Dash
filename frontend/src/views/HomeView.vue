@@ -14,31 +14,28 @@
               <stop offset="60%" stop-color="#c46cb4"/>
               <stop offset="100%" stop-color="#cc527a"/>
             </linearGradient>
-            <clipPath id="trail-clip">
-              <rect x="0" y="0" width="0" height="36">
-                <animate attributeName="x" values="0;0;960" keyTimes="0;0.5;1" dur="40s" repeatCount="indefinite"/>
-                <animate attributeName="width" values="0;960;0" keyTimes="0;0.5;1" dur="40s" repeatCount="indefinite"/>
-              </rect>
-            </clipPath>
           </defs>
           <path id="squiggle-path-line" class="squiggle-path" d="M0,28 C10,20 30,20 40,28 C50,36 70,36 80,28 C90,20 110,20 120,28 C130,36 150,36 160,28 C170,20 190,20 200,28 C210,36 230,36 240,28 C250,20 270,20 280,28 C290,36 310,36 320,28 C330,20 350,20 360,28 C370,36 390,36 400,28 C410,20 430,20 440,28 C450,36 470,36 480,28 C490,20 510,20 520,28 C530,36 550,36 560,28 C570,20 590,20 600,28 C610,36 630,36 640,28 C650,20 670,20 680,28 C690,36 710,36 720,28 C730,20 750,20 760,28 C770,36 790,36 800,28 C810,20 830,20 840,28 C850,36 870,36 880,28 C890,20 910,20 920,28 C930,36 950,36 960,28"/>
-          <path class="squiggle-trail" clip-path="url(#trail-clip)" d="M0,28 C10,20 30,20 40,28 C50,36 70,36 80,28 C90,20 110,20 120,28 C130,36 150,36 160,28 C170,20 190,20 200,28 C210,36 230,36 240,28 C250,20 270,20 280,28 C290,36 310,36 320,28 C330,20 350,20 360,28 C370,36 390,36 400,28 C410,20 430,20 440,28 C450,36 470,36 480,28 C490,20 510,20 520,28 C530,36 550,36 560,28 C570,20 590,20 600,28 C610,36 630,36 640,28 C650,20 670,20 680,28 C690,36 710,36 720,28 C730,20 750,20 760,28 C770,36 790,36 800,28 C810,20 830,20 840,28 C850,36 870,36 880,28 C890,20 910,20 920,28 C930,36 950,36 960,28"/>
+          <!-- Biker: waits 60s, goes (60–80s), waits 140s -->
           <g>
-            <animateMotion dur="40s" repeatCount="indefinite" rotate="auto" keyPoints="0;1;1" keyTimes="0;0.5;1" calcMode="linear">
+            <animateMotion dur="220s" repeatCount="indefinite" rotate="auto" calcMode="linear"
+              keyPoints="0;0;1;1" keyTimes="0;0.273;0.364;1">
               <mpath href="#squiggle-path-line"/>
             </animateMotion>
-            <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.499;0.5;1" dur="40s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.273;0.273;0.364;0.364;1" dur="220s" repeatCount="indefinite"/>
             <g transform="scale(0.05, 0.075) translate(-128, -220)">
               <path fill="#45ada8" fill-opacity="0.85" d="M168,84a32,32,0,1,0-32-32A32,32,0,0,0,168,84Zm0-40a8,8,0,1,1-8,8A8,8,0,0,1,168,44Zm36,96a40,40,0,1,0,40,40A40,40,0,0,0,204,140Zm0,56a16,16,0,1,1,16-16A16,16,0,0,1,204,196ZM54,136a42,42,0,1,0,42,42A42,42,0,0,0,54,136Zm0,60a18,18,0,1,1,18-18A18,18,0,0,1,54,196Zm134-68H152a12,12,0,0,1-8.49-3.51L120,101l-15,15,31.52,31.51A12,12,0,0,1,140,156v48a12,12,0,0,1-24,0V161L79.51,124.49a12,12,0,0,1,0-17l32-32a12,12,0,0,1,17,0L157,104h31a12,12,0,0,1,0,24Z">
                 <animate attributeName="fill" values="#45ada8;#cc527a" dur="20s" repeatCount="indefinite"/>
               </path>
             </g>
           </g>
+          <!-- Runner: waits 140s, goes (140–160s), waits 60s -->
           <g>
-            <animateMotion dur="40s" repeatCount="indefinite" rotate="auto" keyPoints="0;0;1" keyTimes="0;0.5;1" calcMode="linear">
+            <animateMotion dur="220s" repeatCount="indefinite" rotate="auto" calcMode="linear"
+              keyPoints="0;0;1;1" keyTimes="0;0.636;0.727;1">
               <mpath href="#squiggle-path-line"/>
             </animateMotion>
-            <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.499;0.5;1" dur="40s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.636;0.636;0.727;0.727;1" dur="220s" repeatCount="indefinite"/>
             <g transform="scale(0.05, 0.075) translate(-128, -220)">
               <path fill="#45ada8" fill-opacity="0.85" d="M152,92a36,36,0,1,0-36-36A36,36,0,0,0,152,92Zm0-48a12,12,0,1,1-12,12A12,12,0,0,1,152,44Zm76,93.4a12,12,0,0,1-7,10.91,66,66,0,0,1-21.47,3.78c-14,0-34.25-3.82-59.77-19a177,177,0,0,1-10.27,21C153.12,162.83,188,183.8,188,232a12,12,0,0,1-24,0c0-18.69-6.95-33.06-21.26-43.94-9.16-7-19.55-11-27.43-13.34-.81,1-1.64,2-2.5,2.95-20,22.87-44.82,34.76-72.25,34.76a97.33,97.33,0,0,1-9.75-.49,12,12,0,1,1,2.39-23.88c52.3,5.22,77.48-45.92,85.79-67.75C84.8,102.46,63.74,118.78,63.51,119a12,12,0,0,1-15-18.72C50.08,99,88,69.44,142.75,106.62c43.1,29.31,68.1,19.92,68.5,19.76a12,12,0,0,1,16.75,11Z">
                 <animate attributeName="fill" values="#45ada8;#cc527a" dur="20s" repeatCount="indefinite"/>
@@ -63,7 +60,7 @@
               @click="handleTabChange('text')"
             >Input Text</button>
           </div>
-          <TopPanel ref="topPanelRef" :active-tab="activeTab" @submit="handleSubmit" @canvas-draw-start="handleCanvasDrawStart" @clear-route="handleClearRoute" :map-draw-active="mapDrawActive" :has-map-strokes="hasMapStrokes" :has-route="!!routeGeoJson" />
+          <TopPanel ref="topPanelRef" :active-tab="activeTab" @submit="handleSubmit" @canvas-draw-start="handleCanvasDrawStart" @clear-route="handleClearRoute" :map-draw-active="mapDrawActive" :has-map-strokes="hasMapStrokes" :has-route="!!routeGeoJson" :route-geo-json="routeGeoJson" />
         </div>
       </div>
       <div class="right-panel">
@@ -230,6 +227,8 @@ async function handleSubmit(payload: {
 
 .brand-go {
   color: var(--color-primary);
+  position: relative;
+  z-index: 1;
 }
 
 .header-squiggle {
@@ -237,7 +236,8 @@ async function handleSubmit(payload: {
   overflow: hidden;
   display: flex;
   align-items: center;
-  padding-left: 0.75rem;
+  padding: 0 1rem;
+  transform: translateY(-6px);
 }
 
 .squiggle-svg {
@@ -247,24 +247,15 @@ async function handleSubmit(payload: {
 
 .squiggle-path {
   fill: none;
-  stroke: white;
-  stroke-width: 2;
-  stroke-dasharray: 7 5;
-  stroke-linecap: round;
-  animation: squiggle-flow 2s linear infinite;
-}
-
-@keyframes squiggle-flow {
-  to { stroke-dashoffset: -24; }
-}
-
-.squiggle-trail {
-  fill: none;
   stroke: url(#teal-pink-gradient);
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-dasharray: 7 5;
   animation: squiggle-flow 2s linear infinite;
+}
+
+@keyframes squiggle-flow {
+  to { stroke-dashoffset: -24; }
 }
 
 .panel-tab-bar {
