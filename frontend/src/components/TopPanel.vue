@@ -1,52 +1,62 @@
 <template>
   <div class="top-panel" :style="{ '--color-active': activeColor }">
-    <div class="input-area">
-      <div v-if="props.activeTab === 'text'" class="text-input">
-        <input v-model="routeText" type="text" placeholder="run" maxlength="5" />
-      </div>
-      <div v-else class="draw-input">
-        <DrawCanvas ref="drawCanvasRef" :disabled="mapDrawActive" @draw-start="emit('canvas-draw-start')" @strokes-change="hasCanvasStrokes = $event" />
-      </div>
-    </div>
-
-    <div class="options-row">
-      <div class="activity-section">
-        <PhPersonSimpleRun v-if="activityMode === 'run'" class="activity-icon" />
-        <PhPersonSimpleBike v-else class="activity-icon" />
-        <div class="activity-toggle">
-          <button
-            class="activity-btn"
-            :class="{ 'activity-btn--active': activityMode === 'run' }"
-            @click="activityMode = 'run'"
-          >Run</button>
-          <button
-            class="activity-btn"
-            :class="{ 'activity-btn--active': activityMode === 'bike' }"
-            @click="activityMode = 'bike'"
-          >Bike</button>
+    <div class="controls" :class="{ 'controls--disabled': props.isTracking }">
+      <div class="input-area">
+        <div v-if="props.activeTab === 'text'" class="text-input">
+          <input v-model="routeText" type="text" placeholder="run" maxlength="5" />
+        </div>
+        <div v-else class="draw-input">
+          <DrawCanvas ref="drawCanvasRef" :disabled="mapDrawActive" @draw-start="emit('canvas-draw-start')" @strokes-change="hasCanvasStrokes = $event" />
         </div>
       </div>
-      <div class="distance-selector">
-        <button
-          v-for="opt in sizeOptions"
-          :key="opt.value"
-          class="distance-btn"
-          :class="{ 'distance-btn--active': selectedDistance === opt.value }"
-          @click="selectedDistance = opt.value"
-        >
-          {{ opt.label }}
-        </button>
+
+      <div class="options-row">
+        <div class="activity-section">
+          <PhPersonSimpleRun v-if="activityMode === 'run'" class="activity-icon" />
+          <PhPersonSimpleBike v-else class="activity-icon" />
+          <div class="activity-toggle">
+            <button
+              class="activity-btn"
+              :class="{ 'activity-btn--active': activityMode === 'run' }"
+              @click="activityMode = 'run'"
+            >Run</button>
+            <button
+              class="activity-btn"
+              :class="{ 'activity-btn--active': activityMode === 'bike' }"
+              @click="activityMode = 'bike'"
+            >Bike</button>
+          </div>
+        </div>
+        <div class="distance-selector">
+          <button
+            v-for="opt in sizeOptions"
+            :key="opt.value"
+            class="distance-btn"
+            :class="{ 'distance-btn--active': selectedDistance === opt.value }"
+            @click="selectedDistance = opt.value"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
+
+      <p v-if="error" class="error">{{ error }}</p>
+      <div class="submit-row">
+        <button class="submit-btn" :disabled="loading" @click="handleSubmit">{{ buttonText }}<PhMapPin :size="22" :weight="canSubmit ? 'fill' : 'regular'" /></button>
       </div>
     </div>
-
-    <p v-if="error" class="error">{{ error }}</p>
-    <div class="submit-row">
-      <button class="submit-btn" :disabled="loading" @click="handleSubmit">{{ buttonText }}<PhMapPin :size="22" :weight="canSubmit ? 'fill' : 'regular'" /></button>
-      <button v-if="hasRoute" class="clear-route-btn" @click="emit('clear-route')">Clear Route</button>
-    </div>
     <div class="export-row">
-      <button v-if="routeGeoJson" class="export-btn" @click="exportGpx(routeGeoJson)">
-        Export GPX <PhDownloadSimple :size="16" weight="bold" />
+      <div v-if="routeGeoJson" class="export-btn-wrap" :class="{ 'controls--disabled': props.isTracking }">
+        <span class="recommended-badge">Recommended</span>
+        <button class="export-btn" @click="exportGpx(routeGeoJson)">
+          Export GPX <PhDownloadSimple :size="16" weight="bold" />
+        </button>
+      </div>
+      <button v-if="isTracking" class="stop-btn" @click="emit('stop-tracking')">
+        Stop <PhStop :size="16" weight="fill" />
+      </button>
+      <button v-if="routeGeoJson && !isTracking" class="go-btn" @click="emit('start-tracking')">
+        Go! <PhPlay :size="16" weight="fill" />
       </button>
     </div>
   </div>
@@ -56,10 +66,10 @@
 import { ref, computed, watch } from 'vue'
 
 import DrawCanvas from './DrawCanvas.vue'
-import { PhPersonSimpleBike, PhPersonSimpleRun, PhMapPin, PhDownloadSimple } from '@phosphor-icons/vue'
+import { PhPersonSimpleBike, PhPersonSimpleRun, PhMapPin, PhDownloadSimple, PhPlay, PhStop } from '@phosphor-icons/vue'
 import { exportGpx } from '../utils/exportGpx'
 
-const props = defineProps<{ activeTab: 'draw' | 'text'; mapDrawActive?: boolean; hasMapStrokes?: boolean; hasRoute?: boolean; routeGeoJson?: object | null }>()
+const props = defineProps<{ activeTab: 'draw' | 'text'; mapDrawActive?: boolean; hasMapStrokes?: boolean; routeGeoJson?: object | null; isTracking?: boolean }>()
 
 const drawCanvasRef = ref<InstanceType<typeof DrawCanvas> | null>(null)
 const routeText = ref('')
@@ -149,7 +159,8 @@ const emit = defineEmits<{
     strokes: Array<Array<{ x: number; y: number }>>
   }]
   'canvas-draw-start': []
-  'clear-route': []
+  'start-tracking': []
+  'stop-tracking': []
 }>()
 
 watch(() => props.mapDrawActive, (active) => {
@@ -202,6 +213,20 @@ function handleSubmit() {
   width: 100%;
 }
 
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.controls--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}
 
 .input-area {
   width: 100%;
@@ -323,7 +348,30 @@ function handleSubmit() {
   width: 100%;
   display: flex;
   justify-content: flex-end;
+  align-items: flex-end;
   padding-bottom: 0.25rem;
+  gap: 0.75rem;
+}
+
+.export-btn-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.recommended-badge {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-active);
+  background: color-mix(in srgb, var(--color-active) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-active) 35%, transparent);
+  border-radius: 20px;
+  padding: 1px 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .export-btn {
@@ -345,6 +393,48 @@ function handleSubmit() {
 .export-btn:hover {
   background: var(--color-active);
   color: #ffffff;
+  transform: scale(1.03);
+}
+
+.go-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-active);
+  background: var(--color-active);
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.go-btn:hover {
+  opacity: 0.85;
+  transform: scale(1.03);
+}
+
+.stop-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: 1.5px solid #e53e3e;
+  background: #e53e3e;
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stop-btn:hover {
+  opacity: 0.85;
   transform: scale(1.03);
 }
 
@@ -391,5 +481,42 @@ function handleSubmit() {
   background: var(--color-active);
   color: #ffffff;
   transform: scale(1.03);
+}
+
+@media (max-width: 1150px) {
+  .options-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .activity-icon {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .top-panel {
+    flex: none;
+    gap: 0.6rem;
+    padding: 0.5rem 1rem 0.75rem;
+  }
+
+  .controls {
+    gap: 0.6rem;
+  }
+
+  .submit-row {
+    margin-top: 0;
+  }
+
+  .export-row {
+    margin-top: 0.5rem;
+  }
+
+  .distance-btn {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
 }
 </style>

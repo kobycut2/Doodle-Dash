@@ -60,7 +60,7 @@
               @click="handleTabChange('text')"
             >Input Text</button>
           </div>
-          <TopPanel ref="topPanelRef" :active-tab="activeTab" @submit="handleSubmit" @canvas-draw-start="handleCanvasDrawStart" @clear-route="handleClearRoute" :map-draw-active="mapDrawActive" :has-map-strokes="hasMapStrokes" :has-route="!!routeGeoJson" :route-geo-json="routeGeoJson" />
+          <TopPanel ref="topPanelRef" :active-tab="activeTab" @submit="handleSubmit" @canvas-draw-start="handleCanvasDrawStart" @start-tracking="isTracking = true" @stop-tracking="isTracking = false" :map-draw-active="mapDrawActive" :has-map-strokes="hasMapStrokes" :route-geo-json="routeGeoJson" :is-tracking="isTracking" />
         </div>
       </div>
       <div class="right-panel">
@@ -77,10 +77,12 @@
             :selected-center="routeCenter"
             :actual-distance-miles="actualDistanceMiles"
             :show-draw-btn="activeTab === 'draw'"
+            :tracking="isTracking"
             @select-center="handleSelectCenter"
             @clear-center="routeCenter = null"
             @drawing-change="mapDrawActive = $event"
             @strokes-change="hasMapStrokes = $event"
+            @clear-route="handleClearRoute"
           />
         </div>
       </div>
@@ -95,8 +97,6 @@ import DoodleMap from '../components/DoodleMap.vue'
 import { textToScaledLetterGroups, drawnStrokesToScaledLetterGroups } from '../utils/textToPath'
 import { matchLetters, matchDrawingViaBackend, routeLengthMiles } from '../utils/mapMatch'
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string
-
 const routeData = reactive({ text: '', distance: 5 })
 const location = reactive({ lat: 0, lng: 0, ready: false, error: '' })
 const routeGeoJson = ref<object | null>(null)
@@ -107,6 +107,7 @@ const topPanelRef = ref<InstanceType<typeof TopPanel> | null>(null)
 const activeTab = ref<'draw' | 'text'>('draw')
 const mapDrawActive = ref(false)
 const hasMapStrokes = ref(false)
+const isTracking = ref(false)
 
 const activeColor = computed(() =>
   activeTab.value === 'text' ? 'var(--color-primary)' : 'var(--color-secondary)'
@@ -121,6 +122,7 @@ function handleCanvasDrawStart() {
 }
 
 function handleClearRoute() {
+  isTracking.value = false
   routeGeoJson.value = null
   actualDistanceMiles.value = null
 }
@@ -172,9 +174,9 @@ async function handleSubmit(payload: {
   try {
     if (useMapDraw || payload.mode === 'draw') {
       result = await matchDrawingViaBackend(letters)
-      if (!result) result = await matchLetters(letters, MAPBOX_TOKEN)
+      if (!result) result = await matchLetters(letters)
     } else {
-      result = await matchLetters(letters, MAPBOX_TOKEN)
+      result = await matchLetters(letters)
     }
   } finally {
     topPanelRef.value?.stopScramble()
@@ -195,7 +197,7 @@ async function handleSubmit(payload: {
   flex-direction: column;
   height: 100vh;
   background: var(--color-background);
-  --panel-width: 50rem;
+  --panel-width: clamp(22rem, 42vw, 50rem);
 }
 
 .app-header {
@@ -347,12 +349,59 @@ async function handleSubmit(payload: {
 }
 
 @media (max-width: 700px) {
+  .home {
+    height: 100dvh;
+  }
+
+  .app-header {
+    padding: 0.5rem 1rem;
+  }
+
+  .brand {
+    font-size: 1.3rem;
+    margin-left: 0.5rem;
+  }
+
+  .header-squiggle {
+    display: none;
+  }
+
+  .panel-tab-bar {
+    padding: 0.65rem 0.75rem 0;
+  }
+
   .content {
     flex-direction: column;
   }
 
+  .right-panel {
+    order: -1;
+    height: 55dvh;
+    flex: none;
+    padding: 0;
+  }
+
   .left-panel {
     width: 100%;
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+    background: #ffffff;
+  }
+
+  .panel-card {
+    border-radius: 0;
+    box-shadow: none;
+    background: #ffffff;
+  }
+
+  .left-panel .panel-card {
+    flex: none;
+  }
+
+  .right-panel .panel-card {
+    flex: 1;
   }
 }
 </style>

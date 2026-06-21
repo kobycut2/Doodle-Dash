@@ -1,4 +1,3 @@
-const MAPBOX_DIRECTIONS_URL = 'https://api.mapbox.com/directions/v5/mapbox/walking'
 
 function haversineMeters(a: [number, number], b: [number, number]): number {
   const R = 6371000
@@ -34,10 +33,16 @@ function densifyWaypoints(pts: Array<[number, number]>, maxMeters = 100): Array<
   return out
 }
 
+function apiHeaders(): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    'X-Api-Key': import.meta.env.VITE_API_SECRET ?? '',
+  }
+}
+
 // Directions API limit is 25 waypoints. Chunk with 1-point overlap so seams are exact.
 async function routeWaypoints(
-  waypoints: Array<[number, number]>,
-  token: string
+  waypoints: Array<[number, number]>
 ): Promise<Array<[number, number]> | null> {
   if (waypoints.length < 2) return null
 
@@ -46,17 +51,19 @@ async function routeWaypoints(
     for (let i = 0; i < waypoints.length - 1; i += 24) {
       const chunk = waypoints.slice(i, Math.min(i + 25, waypoints.length))
       if (chunk.length < 2) break
-      const result = await routeWaypoints(chunk, token)
+      const result = await routeWaypoints(chunk)
       if (!result) return null
       all.push(...(i === 0 ? result : result.slice(1)))
     }
     return all
   }
 
-  const coordStr = waypoints.map(([lng, lat]) => `${lng.toFixed(7)},${lat.toFixed(7)}`).join(';')
-  const url = `${MAPBOX_DIRECTIONS_URL}/${coordStr}?geometries=geojson&overview=full&access_token=${token}`
   try {
-    const res = await fetch(url)
+    const res = await fetch('/api/directions', {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({ waypoints }),
+    })
     const data = await res.json()
     if (!res.ok || !data.routes?.length) {
       console.error(`Directions ${res.status}:`, data.message ?? data.code ?? data)
@@ -77,7 +84,6 @@ export function routeLengthMiles(coords: Array<[number, number]>): number {
 
 export async function matchLetters(
   letters: Array<Array<Array<[number, number]>>>,
-  token: string,
   onProgress?: (done: number, total: number) => void
 ): Promise<{ type: string; features: any[] } | null> {
   // Flatten all letter strokes into one ordered waypoint sequence
@@ -90,7 +96,7 @@ export async function matchLetters(
 
   if (waypoints.length < 2) return null
 
-  const coords = await routeWaypoints(waypoints, token)
+  const coords = await routeWaypoints(waypoints)
   onProgress?.(letters.length, letters.length)
 
   if (!coords || coords.length < 2) return null
@@ -126,7 +132,7 @@ export async function matchDrawingViaBackend(
   try {
     const res = await fetch('/api/route', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: apiHeaders(),
       body: JSON.stringify({ letters: flatLetters }),
     })
 

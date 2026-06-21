@@ -155,6 +155,8 @@ defineExpose({ getStrokes: () => strokes.value, clear, undo })
   font-size: 1rem;
   font-family: 'Poppins', sans-serif;
   pointer-events: none;
+  text-align: center;
+  padding: 0 1rem;
 }
 
 .canvas-actions {
@@ -184,5 +186,11 @@ defineExpose({ getStrokes: () => strokes.value, clear, undo })
 .canvas-wrapper--disabled {
   opacity: 0.4;
   pointer-events: none;
+}
+
+@media (max-width: 700px) {
+  .canvas-wrapper {
+    height: 150px;
+  }
 }
 </style>

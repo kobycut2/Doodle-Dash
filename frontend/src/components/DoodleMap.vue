@@ -16,8 +16,8 @@
         <button :class="{ 'unit-toggle--active': useKm }" @click="useKm = true">km</button>
       </div>
       <div class="distance-badge">
-        <span class="distance-value">{{ displayedDistance }}</span>
-        <span class="distance-unit">{{ useKm ? 'km' : 'mi' }}</span>
+        <span class="distance-value">{{ tracking ? displayedRemaining : displayedDistance }}</span>
+        <span class="distance-unit">{{ useKm ? 'km' : 'mi' }}{{ tracking ? ' left' : '' }}</span>
       </div>
     </div>
     <button
@@ -31,7 +31,18 @@
       </svg>
     </button>
     <button
-      v-if="locationReady && showDrawBtn"
+      v-if="routeGeoJson && !tracking"
+      class="map-clear-route-btn"
+      :style="{ top: !showDrawBtn ? '0.75rem' : (drawingActive && drawnStrokes.length > 0 ? '8.25rem' : '4.5rem') }"
+      title="Clear route"
+      @click="emit('clear-route')"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+    <button
+      v-if="locationReady && showDrawBtn && !tracking"
       class="map-draw-btn"
       :class="{ 'map-draw-btn--active': drawingActive }"
       :title="drawingActive ? 'Stop drawing' : 'Draw on map'"
@@ -45,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, onMounted } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
@@ -62,6 +73,7 @@ const props = defineProps<{
   selectedCenter: { lat: number; lng: number } | null
   actualDistanceMiles: number | null
   showDrawBtn?: boolean
+  tracking?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -69,6 +81,7 @@ const emit = defineEmits<{
   'drawing-change': [boolean]
   'strokes-change': [boolean]
   'clear-center': []
+  'clear-route': []
 }>()
 
 const cs = getComputedStyle(document.documentElement)
@@ -86,6 +99,17 @@ const displayedDistance = computed(() => {
   if (!props.actualDistanceMiles) return ''
   if (useKm.value) return Math.round(props.actualDistanceMiles * 1.60934 * 10) / 10
   return props.actualDistanceMiles
+})
+
+// Live tracking state
+let watchId: number | null = null
+let liveMarker: mapboxgl.Marker | null = null
+let firstTrackUpdate = true
+const remainingMiles = ref<number | null>(null)
+const displayedRemaining = computed(() => {
+  if (remainingMiles.value === null) return '—'
+  if (useKm.value) return Math.round(remainingMiles.value * 1.60934 * 10) / 10
+  return remainingMiles.value
 })
 
 const drawingActive = ref(false)
@@ -279,7 +303,112 @@ function drawRoute(geojson: object) {
   else map.once('idle', apply)
 }
 
-onUnmounted(() => { disableDrawing(); map?.remove() })
+watch(() => props.tracking, (active) => {
+  if (active) {
+    if (drawingActive.value) {
+      drawingActive.value = false
+      disableDrawing()
+      emit('drawing-change', false)
+    }
+    startTracking()
+  } else {
+    stopTracking()
+  }
+})
+
+function startTracking() {
+  if (!map || !props.routeGeoJson) return
+  firstTrackUpdate = true
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => updateLivePosition(pos.coords.longitude, pos.coords.latitude),
+    null,
+    { enableHighAccuracy: true, maximumAge: 5000 }
+  )
+}
+
+function stopTracking() {
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId)
+    watchId = null
+  }
+  liveMarker?.remove()
+  liveMarker = null
+  remainingMiles.value = null
+  firstTrackUpdate = true
+}
+
+function updateLivePosition(lng: number, lat: number) {
+  if (!map) return
+  if (!liveMarker) {
+    injectLivePulseStyle()
+    const el = document.createElement('div')
+    el.className = 'live-tracking-dot'
+    liveMarker = new mapboxgl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map)
+  } else {
+    liveMarker.setLngLat([lng, lat])
+  }
+  if (firstTrackUpdate) {
+    map.flyTo({ center: [lng, lat], zoom: 15, duration: 1500 })
+    firstTrackUpdate = false
+  } else {
+    map.panTo([lng, lat], { duration: 800 })
+  }
+  if (props.routeGeoJson) {
+    const coords = (props.routeGeoJson as any).features[0].geometry.coordinates as [number, number][]
+    const total = routeTotalMiles(coords)
+    const done = completedMiles(coords, lng, lat)
+    remainingMiles.value = Math.max(0, Math.round((total - done) * 10) / 10)
+  }
+}
+
+function injectLivePulseStyle() {
+  if (document.getElementById('live-pulse-style')) return
+  const style = document.createElement('style')
+  style.id = 'live-pulse-style'
+  style.textContent = `
+    .live-tracking-dot {
+      width: 18px; height: 18px;
+      background: #4285f4; border: 3px solid #fff; border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(66,133,244,0.5);
+      animation: live-pulse 1.5s ease-out infinite;
+    }
+    @keyframes live-pulse {
+      0%   { box-shadow: 0 0 0 0   rgba(66,133,244,0.5); }
+      70%  { box-shadow: 0 0 0 10px rgba(66,133,244,0);   }
+      100% { box-shadow: 0 0 0 0   rgba(66,133,244,0);    }
+    }
+  `
+  document.head.appendChild(style)
+}
+
+function haversineMi(a: [number, number], b: [number, number]): number {
+  const R = 3958.8, rad = Math.PI / 180
+  const dLat = (b[1] - a[1]) * rad, dLng = (b[0] - a[0]) * rad
+  const s = Math.sin(dLat/2)**2 + Math.cos(a[1]*rad) * Math.cos(b[1]*rad) * Math.sin(dLng/2)**2
+  return R * 2 * Math.asin(Math.sqrt(s))
+}
+
+function routeTotalMiles(coords: [number, number][]): number {
+  let d = 0
+  for (let i = 0; i < coords.length - 1; i++) d += haversineMi(coords[i], coords[i+1])
+  return d
+}
+
+function completedMiles(coords: [number, number][], lng: number, lat: number): number {
+  let bestSq = Infinity, bestIdx = 0
+  for (let i = 0; i < coords.length - 1; i++) {
+    const ax = coords[i][0], ay = coords[i][1], bx = coords[i+1][0], by = coords[i+1][1]
+    const dx = bx - ax, dy = by - ay
+    const t = dx === 0 && dy === 0 ? 0 : Math.max(0, Math.min(1, ((lng-ax)*dx + (lat-ay)*dy) / (dx*dx + dy*dy)))
+    const sq = (lng - ax - t*dx)**2 + (lat - ay - t*dy)**2
+    if (sq < bestSq) { bestSq = sq; bestIdx = i }
+  }
+  let d = 0
+  for (let i = 0; i < bestIdx; i++) d += haversineMi(coords[i], coords[i+1])
+  return d
+}
+
+onUnmounted(() => { disableDrawing(); stopTracking(); map?.remove() })
 </script>
 
 <style scoped>
@@ -321,6 +450,29 @@ onUnmounted(() => { disableDrawing(); map?.remove() })
   max-width: 22rem;
   margin: 0;
   line-height: 1.5;
+}
+
+.map-clear-route-btn {
+  position: absolute;
+  left: 0.75rem;
+  z-index: 10;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 8px;
+  border: 2px solid #e53e3e;
+  background: #ffffff;
+  color: #e53e3e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  transition: all 0.15s ease;
+}
+
+.map-clear-route-btn:hover {
+  background: #e53e3e;
+  color: #ffffff;
 }
 
 .map-undo-btn {

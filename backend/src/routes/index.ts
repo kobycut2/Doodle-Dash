@@ -4,6 +4,7 @@ import axios from 'axios'
 const router = Router()
 
 const ORS_URL = 'https://api.openrouteservice.org/v2/directions/foot-walking/geojson'
+const MAPBOX_DIRECTIONS_URL = 'https://api.mapbox.com/directions/v5/mapbox/walking'
 const CHUNK_SIZE = 45
 const CHUNK_OVERLAP = 2
 
@@ -48,9 +49,25 @@ async function routeSegment(pts: Array<[number, number]>, apiKey: string): Promi
   }
 }
 
+function isValidCoord(w: unknown): boolean {
+  return (
+    Array.isArray(w) && w.length === 2 &&
+    typeof w[0] === 'number' && typeof w[1] === 'number' &&
+    w[0] >= -180 && w[0] <= 180 && w[1] >= -90 && w[1] <= 90
+  )
+}
+
 router.post('/route', async (req: Request, res: Response) => {
-  const { letters } = req.body as { letters: Array<Array<[number, number]>> }
-  const valid = (letters ?? []).filter(l => l.length >= 2)
+  const { letters } = req.body as { letters: unknown }
+
+  if (!Array.isArray(letters)) {
+    res.status(400).json({ error: 'Invalid input.' })
+    return
+  }
+
+  const valid = (letters as unknown[]).filter(
+    l => Array.isArray(l) && l.length >= 2 && (l as unknown[]).every(isValidCoord)
+  ) as Array<Array<[number, number]>>
 
   if (valid.length === 0) {
     res.status(400).json({ error: 'No valid letter data received.' })
@@ -106,6 +123,39 @@ router.post('/route', async (req: Request, res: Response) => {
     console.error('Route error:', err.response?.data ?? err.message)
     const msg = err.response?.data?.error?.message ?? err.message
     res.status(500).json({ error: msg })
+  }
+})
+
+router.post('/directions', async (req: Request, res: Response) => {
+  const { waypoints } = req.body as { waypoints: unknown }
+
+  if (
+    !Array.isArray(waypoints) ||
+    waypoints.length < 2 ||
+    waypoints.length > 25 ||
+    !waypoints.every(
+      (w) => Array.isArray(w) && w.length === 2 &&
+        typeof w[0] === 'number' && typeof w[1] === 'number' &&
+        w[0] >= -180 && w[0] <= 180 && w[1] >= -90 && w[1] <= 90
+    )
+  ) {
+    res.status(400).json({ error: 'Invalid waypoints.' })
+    return
+  }
+
+  const token = process.env.MAPBOX_TOKEN!
+  const coordStr = (waypoints as [number, number][])
+    .map(([lng, lat]) => `${lng.toFixed(7)},${lat.toFixed(7)}`)
+    .join(';')
+  const url = `${MAPBOX_DIRECTIONS_URL}/${coordStr}?geometries=geojson&overview=full&access_token=${token}`
+
+  try {
+    const response = await axios.get(url)
+    res.json(response.data)
+  } catch (err: any) {
+    const status = err.response?.status ?? 500
+    const msg = err.response?.data?.message ?? err.message
+    res.status(status).json({ error: msg })
   }
 })
 
