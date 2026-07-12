@@ -59,7 +59,7 @@ async function routeWaypoints(
   }
 
   try {
-    const res = await fetch('/api/directions', {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? ''}/api/directions`, {
       method: 'POST',
       headers: apiHeaders(),
       body: JSON.stringify({ waypoints }),
@@ -130,7 +130,7 @@ export async function matchDrawingViaBackend(
   if (flatLetters.length === 0) return null
 
   try {
-    const res = await fetch('/api/route', {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? ''}/api/route`, {
       method: 'POST',
       headers: apiHeaders(),
       body: JSON.stringify({ letters: flatLetters }),
