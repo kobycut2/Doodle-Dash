@@ -8,5 +8,8 @@
   "scripts": {
     "feDev": "npm run dev --workspace=frontend",
     "beDev": "npm run dev --workspace=backend"
+  },
+  "dependencies": {
+    "express-rate-limit": "^8.5.2"
   }
 }

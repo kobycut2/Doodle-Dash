@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import router from './routes'
+import rateLimit from 'express-rate-limit'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -25,6 +26,10 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN || 'http://localhost:5173' }))
 app.use(express.json())
+
+app.use('/api', rateLimit({ windowMs: 60 * 1000, // 1 minute
+  max: 60, // limit each IP to 60 requests per windowMs
+}))
 
 // Shared-secret check on all /api routes except /health
 app.use('/api', (req: Request, res: Response, next: NextFunction) => {
