@@ -135,14 +135,20 @@ function handleTabChange(tab: 'draw' | 'text') {
   doodleMapRef.value?.reset()
 }
 
+// Default to Orem, Utah so the map has somewhere to show immediately
+const DEFAULT_LOCATION = { lat: 40.2969, lng: -111.6946 }
+
 onMounted(() => {
+  location.lat = DEFAULT_LOCATION.lat
+  location.lng = DEFAULT_LOCATION.lng
+  location.ready = true
+
   navigator.geolocation.getCurrentPosition(
     ({ coords }) => {
       location.lat = coords.latitude
       location.lng = coords.longitude
-      location.ready = true
     },
-    () => { location.error = 'Location access denied. Please enable location permissions.' }
+    () => { /* keep default location if access is denied */ }
   )
 })
 

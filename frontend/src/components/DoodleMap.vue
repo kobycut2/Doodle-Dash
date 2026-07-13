@@ -235,6 +235,12 @@ watch(() => props.locationReady, (ready) => {
   if (ready) initMap(props.lng, props.lat)
 })
 
+watch(() => [props.lat, props.lng], ([lat, lng]) => {
+  if (!map || !props.locationReady || props.selectedCenter) return
+  locationMarker?.setLngLat([lng, lat])
+  map.flyTo({ center: [lng, lat] })
+})
+
 watch(() => props.routeGeoJson, (geojson) => {
   if (!map) return
   if (geojson) {
